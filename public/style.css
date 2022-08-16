@@ -37,6 +37,9 @@ canvas {
 
 section {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
 }
 
 button {
@@ -46,8 +49,9 @@ button {
   color: #789;
   font-weight: bold;
   font-size: xx-large;
-  height: 100%;
+  height: 50%;
   outline: none;
+  text-transform: uppercase;
 }
 
 nav {

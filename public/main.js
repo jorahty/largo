@@ -18,15 +18,15 @@ const engine = Engine.create(),
   world = engine.world;
 
 // update world.bodies according to gamestate
-socket.on('update', gs => {
-  for (const { i, x, y, r } of gs) {
+socket.on('update', ({p, b}) => {
+  for (const { i, x, y, r } of p) {
 
     let player = world.bodies.find(body => body.id === i);
     
     // add player if not already in bodies
     if (!player) {
       const arrow = Vertices.fromPath('0 80 20 0 40 80');
-      player = Bodies.fromVertices(500, 100, arrow, { id: i });
+      player = Bodies.fromVertices(0, 0, arrow, { id: i });
       player.render.fillStyle = (player.id === myId) ? '#27c' : '#567';
       Composite.add(world, player);
     }
@@ -38,16 +38,38 @@ socket.on('update', gs => {
 
   // remove absent players
   world.bodies.forEach(body => {
-    const player = gs.find(({ i }) => i === body.id);
+    const player = p.find(({ i }) => i === body.id);
     if (!player) Composite.remove(world, [body])
   });
+
+  for (const { i, x, y } of b) {
+
+    let bomb = world.bodies.find(body => body.id === i);
+    
+    // add bomb if not already in bodies
+    if (!bomb) {
+      bomb = Bodies.circle(0, 0, 16, { id: i });
+      bomb.render.fillStyle = '#f67';
+      Composite.add(world, bomb);
+    }
+
+    // update bomb per gamestate
+    Body.setPosition(bomb, { x, y });
+  }
+
+  // remove absent bombs
+  // world.bodies.forEach(body => {
+  //   const bomb = b.find(({ i }) => i === body.id);
+  //   if (!bomb) Composite.remove(world, [body])
+  // });
+  // broken because world.bodies has bodies that arent in b
 });
 
 // create renderer
 var render = Render.create({
   element: document.body,
   engine: engine,
-  options: { wireframes: false, height: 1000 },
+  options: { wireframes: false, height: 800 },
 });
 Render.run(render);
 
@@ -61,7 +83,7 @@ setInterval(() => {
   });
 }, 1000);
 
-Events.on(render, "afterRender", () => {
+Events.on(render, 'afterRender', () => {
   render.context.fillStyle = '#778899bb';
   render.context.font = "26px Arial";
   render.context.textBaseline = 'top';
@@ -72,24 +94,30 @@ Events.on(render, "afterRender", () => {
 // configure controls to send input
 
 const controls = document.createElement('section');
-const rotate = document.createElement('button');
+const left = document.createElement('button');
+const right = document.createElement('button');
+const shoot = document.createElement('button');
 const translate = document.createElement('button');
 
-rotate.textContent = 'rotate';
-translate.textContent = 'translate';
+left.textContent = 'l';
+right.textContent = 'r';
+shoot.textContent = 's';
+translate.textContent = 't';
 
 document.body.appendChild(controls);
-controls.appendChild(rotate);
-controls.appendChild(translate);
-
-translate.onpointerdown = rotate.onpointerdown = (e) => input(e, true);
-translate.onpointerup = rotate.onpointerup = (e) => input(e, false);
+[left, right, shoot, translate].forEach(control => {
+  controls.appendChild(control);
+  control.onpointerdown = e => input(e, true);
+  control.onpointerup = e => input(e, false);
+});
 
 function input(e, down) {
   e.target.style.opacity = down ? 0.5 : 1;
-  let code = e.target.textContent === 'translate' ? 't' : 'r';
+  let code = e.target.textContent;
   if (!down) code = code.toUpperCase();
+  if (code === 'S') return;
   socket.volatile.emit('input', code);
+  console.log(code);
 }
 
 // listen for injury
