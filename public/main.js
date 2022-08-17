@@ -208,3 +208,5 @@ socket.on('leaderboard', lb => {
 render.canvas.onpointerdown = () => {
   info.style.display = info.style.display === 'none' ? 'flex' : 'none';
 };
+
+info.onpointerdown = () => info.style.display = 'none';
