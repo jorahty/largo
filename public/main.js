@@ -201,10 +201,10 @@ info.appendChild(leaderboard);
 socket.on('leaderboard', lb => {
   leaderboard.innerHTML = '';
   lb.forEach(({nickname, kills}) => {
-    leaderboard.innerHTML += `${nickname} ${kills}<br>`;
+    leaderboard.innerHTML += `${nickname}: ${kills}<br>`;
   })
 });
 
 render.canvas.onpointerdown = () => {
-  info.style.display = info.style.display === 'none' ? 'block' : 'none';
+  info.style.display = info.style.display === 'none' ? 'flex' : 'none';
 };

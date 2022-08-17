@@ -25,6 +25,7 @@ body {
   display: flex;
   flex-direction: column;
   max-width: 60vh;
+  position: relative;
 }
 
 body * {
@@ -66,8 +67,12 @@ nav {
 article {
   position: absolute;
   top: 30px;
-  right: 8px;
+  right: 0;
+  left: 0;
+  padding: 0 8px;
   color: #789;
   line-height: 1.5;
   text-align: right;
+  display: flex;
+  justify-content: space-between;
 }
