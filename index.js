@@ -64,8 +64,8 @@ io.on('connection', socket => {
   Events.on(engine, 'beforeUpdate', () => {
     const {l, r, t} = player.controls;
 
-    if (l) player.torque = -0.05;
-    if (r) player.torque = 0.05;
+    if (l) player.torque = -0.04;
+    if (r) player.torque = 0.04;
 
     if (t) player.force = {
       x: 0.0015 * Math.sin(player.angle),
