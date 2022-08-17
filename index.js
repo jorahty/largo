@@ -116,6 +116,8 @@ setInterval(() => {
     ({nickname, kills}) => ({nickname, kills})
   );
 
+  leaderboard.sort((a, b) => b.kills - a.kills);
+
   io.volatile.emit('leaderboard', leaderboard);
 
 }, 3000);
