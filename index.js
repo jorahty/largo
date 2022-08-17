@@ -42,6 +42,7 @@ io.on('connection', socket => {
   player.kills = 0;
   player.controls = {};
   player.shoot = shoot;
+  player.hasBomb = true;
   Composite.add(players, player);
 
   socketIds.set(player.id, socket.id) // save socketId
@@ -122,35 +123,70 @@ Events.on(engine, "collisionStart", ({ pairs }) => {
 
     if (victim.shielded) return; // return if shielded
 
-    // compute damage
-    const damage = Math.round(collision.depth * 5);
-
-    // decrement victim health
-    victim.health -= damage;
-
     // give victim 1 second sheild
+    // NOTE: shield only protects from stab, not bomb
     victim.shielded = true;
     setTimeout(() => victim.shielded = false, 1000);
 
-    // emit 'strike' with damage dealt and position
-    io.to(socketIds.get(attacker.id)).emit('strike', damage, vertex.x, vertex.y);
+    // compute damage
+    const damage = Math.round(collision.depth * 5);
 
-    // check if dead
-    if (victim.health <= 0) {
-      victim.health = 100;
-      Body.setPosition(victim, { x: 400, y: 100 });
-    }
+    strike(attacker, damage, [{ x: vertex.x, y: vertex.y }]);
 
-    // emit 'injury' with new health
-    io.to(socketIds.get(victim.id)).emit('injury', victim.health);
+    injury(victim, damage);
   }
 
 });
 
 function shoot() {
-  const options = { mass: 0.01, restitution: 0.95, frictionAir: 0.01 };
+  if (!this.hasBomb) return;
+  const options = {
+    mass: 0.01,
+    restitution: 0.95,
+    frictionAir: 0.01,
+    position: {
+      x: this.position.x + 70 * Math.sin(this.angle),
+      y: this.position.y - 70 * Math.cos(this.angle)
+    }
+  };
   const bomb = Bodies.circle(400, 100, 16, options);
   Composite.add(bombs, bomb);
+  Body.setVelocity(bomb, {
+    x: 20 * Math.sin(this.angle),
+    y: -20 * Math.cos(this.angle)
+  })
+  this.hasBomb = false;
+  setTimeout(() => {
+    const victims = players.bodies; // get players within explosion radius
+    positions = victims.map(victim => victim.position);
+    const damage = 20;
+    strike(this, damage, positions);
+    victims.forEach(victim => injury(victim, damage));
+    Composite.remove(bombs, bomb);
+    this.hasBomb = true;
+  }, 3000);
 }
+
+function strike(player, amount, positions) {
+  // emit 'strike' with damage dealt and position
+  io.to(socketIds.get(player.id)).emit('strike', amount, positions);
+}
+
+function injury(player, amount) {
+  // decrement victim health
+  player.health -= amount;
+
+  // check if dead
+  if (player.health <= 0) {
+    player.health = 100;
+    Body.setPosition(player, { x: 400, y: 100 });
+  }
+
+  // emit 'injury' with new health
+  io.to(socketIds.get(player.id)).emit('injury', player.health);
+}
+
+// client:
+// when bomb is removed (it has just exploded) so display circle animation
 
 http.listen(port, () => console.log(`Listening on port ${port}`));

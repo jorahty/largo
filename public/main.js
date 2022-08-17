@@ -17,6 +17,8 @@ socket.on('id', id => myId = id); // save id
 const engine = Engine.create(),
   world = engine.world;
 
+let explosion = null;
+
 // update world.bodies according to gamestate
 socket.on('update', ({p, b}) => {
   for (const { i, x, y, r } of p) {
@@ -36,12 +38,6 @@ socket.on('update', ({p, b}) => {
     Body.setAngle(player, r);
   }
 
-  // remove absent players
-  world.bodies.forEach(body => {
-    const player = p.find(({ i }) => i === body.id);
-    if (!player) Composite.remove(world, [body])
-  });
-
   for (const { i, x, y } of b) {
 
     let bomb = world.bodies.find(body => body.id === i);
@@ -57,12 +53,17 @@ socket.on('update', ({p, b}) => {
     Body.setPosition(bomb, { x, y });
   }
 
-  // remove absent bombs
-  // world.bodies.forEach(body => {
-  //   const bomb = b.find(({ i }) => i === body.id);
-  //   if (!bomb) Composite.remove(world, [body])
-  // });
-  // broken because world.bodies has bodies that arent in b
+  // remove absent bodies
+  // (that is, remove world bodies not found in gamestate)
+  world.bodies.forEach(body => {
+    const foundInGamestate = p.concat(b).find(({ i }) => i === body.id);
+    if (!foundInGamestate) {
+      Composite.remove(world, [body]);
+      if (body.vertices.length > 3) { // if a bomb was removed
+        explosion = {x: body.position.x, y: body.position.y, opacity: 100};
+      }
+    }
+  });
 });
 
 // create renderer
@@ -117,7 +118,6 @@ function input(e, down) {
   if (!down) code = code.toUpperCase();
   if (code === 'S') return;
   socket.volatile.emit('input', code);
-  console.log(code);
 }
 
 // listen for injury
@@ -127,7 +127,6 @@ document.body.prepend(healthBar);
 healthBar.textContent = healthBar.style.width = '100%';
 
 socket.on('injury', health => {
-  console.log(`health: ${health}`);
   healthBar.textContent = healthBar.style.width = `${health}%`;
 });
 
@@ -135,10 +134,13 @@ socket.on('injury', health => {
 
 let damageIndicators = [];
 
-socket.on('strike', (damage, x, y) => {
-  damageIndicators.push({damage, x, y, opacity: 300});
+socket.on('strike', (damage, positions) => {
+  positions.forEach(({x, y}) => {
+    damageIndicators.push({damage, x, y, opacity: 300});
+  });
 });
 
+// render damageIndicators
 Events.on(render, "afterRender", () => {
   const ctx = render.context;
 
@@ -151,7 +153,6 @@ Events.on(render, "afterRender", () => {
     ctx.lineWidth = 8;
     ctx.strokeStyle = `rgba(0,0,0,${d.opacity / 100})`;
     ctx.fillStyle = `rgba(255,169,64,${d.opacity / 100})`;
-    // ctx.strokeText(`${d.damage}`, d.x, d.y);
     ctx.fillText(`${d.damage}`, d.x, d.y);
 
     // decrement opacity
@@ -159,4 +160,21 @@ Events.on(render, "afterRender", () => {
   }
   
   damageIndicators = damageIndicators.filter(d => d.opacity > 0);
+});
+
+// render explosion
+Events.on(render, "afterRender", () => {
+  if (!explosion) return;
+
+  const ctx = render.context;
+
+  ctx.strokeStyle = `rgba(119,136,153,${explosion.opacity / 100})`;
+  ctx.beginPath();
+  ctx.arc(explosion.x, explosion.y, 100, 0, 2*Math.PI);
+  ctx.stroke();
+
+  // decrement opacity
+  explosion.opacity -= Math.floor(explosion.opacity / 8) + 1;
+
+  if (explosion.opacity <= 0) explosion = null;
 });
