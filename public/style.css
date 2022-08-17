@@ -62,3 +62,12 @@ nav {
   font-weight: bold;
   color: #fff;
 }
+
+article {
+  position: absolute;
+  top: 30px;
+  right: 8px;
+  color: #789;
+  line-height: 1.5;
+  text-align: right;
+}

@@ -49,6 +49,10 @@ io.on('connection', socket => {
 
   socket.emit('id', player.id); // send id
 
+  // listen for nickname
+
+  socket.on('nickname', nn => player.nickname = nn);
+
   // listen for input
   socket.on('input', code => {
     if (code === 'w') {
@@ -105,6 +109,17 @@ setInterval(() => {
 
 }, 1000 / 30);
 
+// infrequently emit leaderboard to all clients
+setInterval(() => {
+
+  const leaderboard = players.bodies.map(
+    ({nickname, kills}) => ({nickname, kills})
+  );
+
+  io.volatile.emit('leaderboard', leaderboard);
+
+}, 3000);
+
 // listen for collisions
 Events.on(engine, "collisionStart", ({ pairs }) => {
   
@@ -134,7 +149,7 @@ Events.on(engine, "collisionStart", ({ pairs }) => {
 
     strike(attacker, damage, [{ x: vertex.x, y: vertex.y }]);
 
-    injury(victim, damage);
+    injury(victim, damage, attacker);
   }
 
 });
@@ -170,7 +185,7 @@ function shoot() {
     positions = victims.map(victim => victim.position);
     const damage = 20;
     strike(this, damage, positions);
-    victims.forEach(victim => injury(victim, damage));
+    victims.forEach(victim => injury(victim, damage, this));
     Composite.remove(bombs, bomb);
     this.hasBomb = true;
   }, 3000);
@@ -181,7 +196,7 @@ function strike(player, amount, positions) {
   io.to(socketIds.get(player.id)).emit('strike', amount, positions);
 }
 
-function injury(player, amount) {
+function injury(player, amount, attacker) {
   // decrement victim health
   player.health -= amount;
 
@@ -189,6 +204,7 @@ function injury(player, amount) {
   if (player.health <= 0) {
     player.health = 100;
     Body.setPosition(player, { x: 400, y: 100 });
+    attacker.kills += 1;
   }
 
   // emit 'injury' with new health

@@ -9,6 +9,8 @@ const Engine = Matter.Engine,
   Events = Matter.Events;
 
 const socket = io(); // connect to server
+  
+socket.emit('nickname', prompt('Nickname')); // send nickname
 
 let myId;
 socket.on('id', id => myId = id); // save id
@@ -82,21 +84,18 @@ Render.run(render);
 
 // display ping
 
-let ping = 0;
+const info = document.createElement('article');
+document.body.appendChild(info);
+
+const ping = document.createElement('label');
+info.appendChild(ping);
 setInterval(() => {
   const start = Date.now();
   socket.volatile.emit('ping', () => {
-    ping = Date.now() - start;
+    const duration = Date.now() - start;
+    ping.textContent = `${duration} ping`;
   });
 }, 1000);
-
-Events.on(render, 'afterRender', () => {
-  render.context.fillStyle = '#778899bb';
-  render.context.font = "26px Arial";
-  render.context.textBaseline = 'top';
-  render.context.textAlign = 'right';
-  render.context.fillText(`${ping} ping`, 800 - 10, 10);
-});
 
 // configure controls to send input
 
@@ -195,3 +194,17 @@ Events.on(render, "afterRender", () => {
 
   if (explosion.opacity <= 0) explosion = null;
 });
+
+const leaderboard = document.createElement('div');
+info.appendChild(leaderboard);
+
+socket.on('leaderboard', lb => {
+  leaderboard.innerHTML = '';
+  lb.forEach(({nickname, kills}) => {
+    leaderboard.innerHTML += `${nickname} ${kills}<br>`;
+  })
+});
+
+render.canvas.onpointerdown = () => {
+  info.style.display = info.style.display === 'none' ? 'block' : 'none';
+};
