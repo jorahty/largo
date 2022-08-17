@@ -45,12 +45,18 @@ socket.on('update', ({p, b}) => {
     // add bomb if not already in bodies
     if (!bomb) {
       bomb = Bodies.circle(0, 0, 16, { id: i });
-      bomb.render.fillStyle = '#f67';
+      bomb.startTime = Date.now();
       Composite.add(world, bomb);
     }
 
     // update bomb per gamestate
     Body.setPosition(bomb, { x, y });
+
+    // update bomb color relative to its startTime
+    const dt = (Date.now() - bomb.startTime) / 1000;
+    const hue = 120 - 120 * dt / 3;
+    const lightness = 40 + 24 * dt / 3;
+    bomb.render.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;
   }
 
   // remove absent bodies
