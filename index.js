@@ -6,7 +6,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static('public'));
 
-const { Engine, Runner, Body,
+const { Engine, Runner, Body, Query,
   Vertices, Events, Bodies, Composite } = require('matter-js');
 
 // create an engine
@@ -82,7 +82,6 @@ io.on('connection', socket => {
 });
 
 // emit regular updates to clients
-// instead of round use sigfig function
 setInterval(() => {
 
   let p = players.bodies.map(body => ({
@@ -97,6 +96,8 @@ setInterval(() => {
     x: Math.round(body.position.x),
     y: Math.round(body.position.y),
   }));
+
+  // TODO: 👆 instead of round use sigfig function
 
   const gamestate = {p, b};
 
@@ -157,7 +158,15 @@ function shoot() {
   })
   this.hasBomb = false;
   setTimeout(() => {
-    const victims = players.bodies; // get players within explosion radius
+    // get players within explosion radius
+    const victims = players.bodies.filter(player => {
+      // return true if distance from player to bomb
+      // is less than 100
+      const dx = bomb.position.x - player.position.x;
+      const dy = bomb.position.y - player.position.y;
+      const distance = Math.hypot(dx, dy);
+      return distance < 100;
+    });
     positions = victims.map(victim => victim.position);
     const damage = 20;
     strike(this, damage, positions);
@@ -185,8 +194,5 @@ function injury(player, amount) {
   // emit 'injury' with new health
   io.to(socketIds.get(player.id)).emit('injury', player.health);
 }
-
-// client:
-// when bomb is removed (it has just exploded) so display circle animation
 
 http.listen(port, () => console.log(`Listening on port ${port}`));
