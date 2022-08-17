@@ -51,7 +51,7 @@ io.on('connection', socket => {
 
   // listen for input
   socket.on('input', code => {
-    if (code === 's') {
+    if (code === 'w') {
       player.shoot();
       return;
     }
@@ -62,12 +62,12 @@ io.on('connection', socket => {
 
   // move players according to controls
   Events.on(engine, 'beforeUpdate', () => {
-    const {l, r, t} = player.controls;
+    const {a, d, l} = player.controls;
 
-    if (l) player.torque = -0.04;
-    if (r) player.torque = 0.04;
+    if (a) player.torque = -0.04;
+    if (d) player.torque = 0.04;
 
-    if (t) player.force = {
+    if (l) player.force = {
       x: 0.0015 * Math.sin(player.angle),
       y: -0.0015 * Math.cos(player.angle)
     };

@@ -106,10 +106,10 @@ const right = document.createElement('button');
 const shoot = document.createElement('button');
 const translate = document.createElement('button');
 
-left.textContent = 'l';
-right.textContent = 'r';
-shoot.textContent = 's';
-translate.textContent = 't';
+left.textContent = 'a';
+right.textContent = 'd';
+shoot.textContent = 'w';
+translate.textContent = 'l';
 
 document.body.appendChild(controls);
 [left, right, shoot, translate].forEach(control => {
@@ -122,9 +122,19 @@ function input(e, down) {
   e.target.style.opacity = down ? 0.5 : 1;
   let code = e.target.textContent;
   if (!down) code = code.toUpperCase();
-  if (code === 'S') return;
+  if (code === 'W') return;
   socket.volatile.emit('input', code);
 }
+
+onkeydown = e => {
+  if (!'adwl'.includes(e.key)) return;
+  socket.volatile.emit('input', e.key);
+};
+
+onkeyup = e => {
+  if (!'adwl'.includes(e.key)) return;
+  socket.volatile.emit('input', e.key.toUpperCase());
+};
 
 // listen for injury
 
@@ -174,7 +184,8 @@ Events.on(render, "afterRender", () => {
 
   const ctx = render.context;
 
-  ctx.strokeStyle = `rgba(119,136,153,${explosion.opacity / 100})`;
+  ctx.strokeStyle = `rgba(255,255,255,${explosion.opacity / 100})`;
+  ctx.lineWidth = 6;
   ctx.beginPath();
   ctx.arc(explosion.x, explosion.y, 100, 0, 2*Math.PI);
   ctx.stroke();
