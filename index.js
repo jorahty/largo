@@ -6,7 +6,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static('public'));
 
-const { Engine, Runner, Body, Query,
+const { Engine, Runner, Body,
   Vertices, Events, Bodies, Composite } = require('matter-js');
 
 // create an engine
